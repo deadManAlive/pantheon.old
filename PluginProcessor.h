@@ -44,5 +44,10 @@ public:
 
 private:
     //==============================================================================
+    juce::AudioParameterFloat* leftPreGain;
+    juce::AudioParameterFloat* rightPreGain;
+    juce::AudioParameterFloat* leftToRightGain;
+    juce::AudioParameterFloat* rightToLeftGain;
+    //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)
 };

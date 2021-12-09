@@ -12,6 +12,42 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
                      #endif
                        )
 {
+    addParameter(
+        leftPreGain = new juce::AudioParameterFloat(
+            "lpregain",
+            "Left Gain",
+            -2.0f,
+            2.0f,
+            1.0f
+        )
+    );
+    addParameter(
+        rightPreGain = new juce::AudioParameterFloat(
+            "rpregain",
+            "Right Gain",
+            -2.0f,
+            2.0f,
+            1.0f
+        )
+    );
+    addParameter(
+        leftToRightGain = new juce::AudioParameterFloat(
+            "l2rgain",
+            "Left-to-Right Gain",
+            -2.0f,
+            2.0f,
+            0.0f
+        )
+    );
+    addParameter(
+        rightToLeftGain = new juce::AudioParameterFloat(
+            "r2lgain",
+            "Right-to-Left Gain",
+            -2.0f,
+            2.0f,
+            0.0f
+        )
+    );
 }
 
 AudioPluginAudioProcessor::~AudioPluginAudioProcessor()
@@ -145,14 +181,29 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     // the samples and the outer loop is handling the channels.
     // Alternatively, you can process the samples with the channels
     // interleaved by keeping the same state.
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
-    {
-        auto* channelData = buffer.getWritePointer (channel);
-        juce::ignoreUnused (channelData);
-        // ..do something to the data...
-        for(int i = 0; i < buffer.getNumSamples(); i++){
-            *(channelData + i) = 0.0f;
-        }
+    // for (int channel = 0; channel < totalNumInputChannels; ++channel)
+    // {
+    //     auto* channelData = buffer.getWritePointer (channel);
+    //     juce::ignoreUnused (channelData);
+    //     // ..do something to the data...
+    //     for(int i = 0; i < buffer.getNumSamples(); i++){
+    //         *(channelData + i) = 0.0f; //mute
+    //     }
+    // }
+    auto* leftChannel = buffer.getWritePointer(0);
+    auto* rightChannel = buffer.getWritePointer(1);
+
+    float lpregain = leftPreGain->get();
+    float rpregain = rightPreGain->get();
+    float l2rgain = leftToRightGain->get();
+    float r2lgain = rightToLeftGain->get();
+
+    for(int i = 0; i < buffer.getNumSamples(); i++){
+        auto currentLeftSample = leftChannel[i];
+        auto currentRightSample = rightChannel[i];
+
+        leftChannel[i] = lpregain*currentLeftSample + r2lgain*currentRightSample;
+        rightChannel[i] = rpregain*currentRightSample + l2rgain*currentLeftSample;
     }
 }
 
@@ -170,17 +221,25 @@ juce::AudioProcessorEditor* AudioPluginAudioProcessor::createEditor()
 //==============================================================================
 void AudioPluginAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    // You should use this method to store your parameters in the memory block.
-    // You could do that either as raw data, or use the XML or ValueTree classes
-    // as intermediaries to make it easy to save and load complex data.
-    juce::ignoreUnused (destData);
+    std::unique_ptr<juce::XmlElement> xml(new juce::XmlElement("pantheonParameterXML"));
+    xml->setAttribute("leftpregain", (double) *leftPreGain);
+    xml->setAttribute("rightpregain", (double) *rightPreGain);
+    xml->setAttribute("lefttorightgain", (double) *leftToRightGain);
+    xml->setAttribute("righttoleftgain", (double) *rightToLeftGain);
+    copyXmlToBinary(*xml, destData);
 }
 
 void AudioPluginAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    // You should use this method to restore your parameters from this memory block,
-    // whose contents will have been created by the getStateInformation() call.
-    juce::ignoreUnused (data, sizeInBytes);
+    std::unique_ptr<juce::XmlElement> xml(getXmlFromBinary(data, sizeInBytes));
+    if(xml.get() != nullptr){
+        if(xml->hasTagName("pantheonparameterXML")){
+            *leftPreGain = (float)xml->getDoubleAttribute("leftpregain", 1.0f);
+            *rightPreGain = (float)xml->getDoubleAttribute("rightpregain", 1.0f);
+            *leftToRightGain = (float)xml->getDoubleAttribute("lefttorightgain", 0.0f);
+            *rightToLeftGain = (float)xml->getDoubleAttribute("righttoleftgain", 0.0f);
+        }
+    }
 }
 
 //==============================================================================

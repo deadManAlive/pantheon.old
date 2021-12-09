@@ -3,7 +3,12 @@ project(PANTHEON_ADVANCED_PANNER VERSION 0.0.1)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_subdirectory(JUCE)                    # If you've put JUCE in a subdirectory called JUCE
+# JUCE bare minimum, from https://github.com/juce-framework/JUCE:
+# └── JUCE
+#       ├── CMakeLists.txt
+#       ├── extras
+#       └── modules
+add_subdirectory(JUCE)
 
 juce_add_plugin(pantheon
     COMPANY_NAME "Twilight's Sound"
