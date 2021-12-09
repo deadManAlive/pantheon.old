@@ -42,6 +42,11 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    //==============================================================================
+    void setLeftPreGain(float newValue);
+    void setRightPreGain(float newValue);
+    void setLeftToRightGain(float newValue);
+    void setRightToLeftGain(float newValue);
 private:
     //==============================================================================
     juce::AudioParameterFloat* leftPreGain;

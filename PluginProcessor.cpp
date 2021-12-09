@@ -241,7 +241,26 @@ void AudioPluginAudioProcessor::setStateInformation (const void* data, int sizeI
         }
     }
 }
+//==============================================================================
+void AudioPluginAudioProcessor::setLeftPreGain(float newValue)
+{
+    *leftPreGain = newValue;
+}
 
+void AudioPluginAudioProcessor::setRightPreGain(float newValue)
+{
+    *rightPreGain = newValue;
+}
+
+void AudioPluginAudioProcessor::setLeftToRightGain(float newValue)
+{
+    *leftToRightGain = newValue;
+}
+
+void AudioPluginAudioProcessor::setRightToLeftGain(float newValue)
+{
+    *rightToLeftGain = newValue;
+}
 //==============================================================================
 // This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

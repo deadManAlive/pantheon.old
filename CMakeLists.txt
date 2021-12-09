@@ -3,15 +3,11 @@ project(PANTHEON_ADVANCED_PANNER VERSION 0.0.1)
 
 set(CMAKE_CXX_STANDARD 17)
 
-# JUCE bare minimum, from https://github.com/juce-framework/JUCE:
-# └── JUCE
-#       ├── CMakeLists.txt
-#       ├── extras
-#       └── modules
-add_subdirectory(JUCE)
+# add_subdirectory(JUCE)
+find_package(JUCE CONFIG REQUIRED)
 
 juce_add_plugin(pantheon
-    COMPANY_NAME "Twilight's Sound"
+    COMPANY_NAME "Tauri Invictus"
     COMPANY_COPYRIGHT "GPLv3"
     COPY_PLUGIN_AFTER_BUILD TRUE
     VST3_COPY_DIR "D:/null_/DSP/JUCE/VSTVault"
@@ -37,8 +33,15 @@ target_compile_definitions(pantheon
         JUCE_DISPLAY_SPLASH_SCREEN=0
 )
 
+juce_add_binary_data(pantheon_BinaryData
+  SOURCES
+    "resources/bg.png"
+    "resources/bgscribble.png"
+)
+
 target_link_libraries(pantheon
     PRIVATE
+        pantheon_BinaryData
         juce::juce_audio_utils
     PUBLIC
         juce::juce_recommended_config_flags
