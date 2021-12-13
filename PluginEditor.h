@@ -26,6 +26,8 @@ private:
     juce::Slider rPreGainSlider;
     juce::Slider l2rGainSlider;
     juce::Slider r2lGainSlider;
+    juce::Slider leftPanSlider;
+    juce::Slider rightPanSlider;
 
     juce::Image backGroundImg = juce::ImageCache::getFromMemory(BinaryData::bgscribble_png, BinaryData::bgscribble_pngSize);
 

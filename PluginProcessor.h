@@ -1,6 +1,7 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <juce_dsp/juce_dsp.h>
 
 //==============================================================================
 class AudioPluginAudioProcessor  : public juce::AudioProcessor
@@ -47,12 +48,21 @@ public:
     void setRightPreGain(float newValue);
     void setLeftToRightGain(float newValue);
     void setRightToLeftGain(float newValue);
+    void setLeftPan(float newValue);
+    void setRightPan(float newValue);
 private:
     //==============================================================================
     juce::AudioParameterFloat* leftPreGain;
     juce::AudioParameterFloat* rightPreGain;
     juce::AudioParameterFloat* leftToRightGain;
     juce::AudioParameterFloat* rightToLeftGain;
+    juce::AudioParameterFloat* leftPan; //default -1.0 / full left
+    juce::AudioParameterFloat* rightPan; //default 1.0 / full right
+    //==============================================================================
+    // float prevLeftPreGain;
+    // float prevRightPreGain;
+    // float prevLeftToRightGain;
+    // float prevRightToLeftGain;
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)
 };

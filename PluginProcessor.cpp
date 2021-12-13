@@ -48,6 +48,24 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
             0.0f
         )
     );
+    addParameter(
+        leftPan = new juce::AudioParameterFloat(
+            "leftpan",
+            "Left Pan",
+            -1.0f,
+            1.0f,
+            -1.0f
+        )
+    );
+    addParameter(
+        rightPan = new juce::AudioParameterFloat(
+            "rightpan",
+            "Right Pan",
+            -1.0f,
+            1.0f,
+            1.0f
+        )
+    );
 }
 
 AudioPluginAudioProcessor::~AudioPluginAudioProcessor()
@@ -125,6 +143,10 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
     juce::ignoreUnused (sampleRate, samplesPerBlock);
+    // prevLeftPreGain = *leftPreGain;
+    // prevRightPreGain = *rightPreGain;
+    // prevLeftToRightGain = *leftToRightGain;
+    // prevRightToLeftGain = *rightToLeftGain;
 }
 
 void AudioPluginAudioProcessor::releaseResources()
@@ -175,28 +197,41 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    // This is the place where you'd normally do the guts of your plugin's
-    // audio processing...
-    // Make sure to reset the state if your inner loop is processing
-    // the samples and the outer loop is handling the channels.
-    // Alternatively, you can process the samples with the channels
-    // interleaved by keeping the same state.
-    // for (int channel = 0; channel < totalNumInputChannels; ++channel)
-    // {
-    //     auto* channelData = buffer.getWritePointer (channel);
-    //     juce::ignoreUnused (channelData);
-    //     // ..do something to the data...
-    //     for(int i = 0; i < buffer.getNumSamples(); i++){
-    //         *(channelData + i) = 0.0f; //mute
-    //     }
-    // }
+    //==================MODEL1=======================================================
     auto* leftChannel = buffer.getWritePointer(0);
     auto* rightChannel = buffer.getWritePointer(1);
 
+    //stereo channel mixing vars.
     float lpregain = leftPreGain->get();
     float rpregain = rightPreGain->get();
     float l2rgain = leftToRightGain->get();
     float r2lgain = rightToLeftGain->get();
+
+    //post-stereo panning vars.
+    float lPan = -leftPan->get();
+    float rPan = rightPan->get();
+    float lPostGain;
+    float rPostGain;
+    float l2rPostGain;
+    float r2lPostGain;
+
+    if(lPan > 0.0f){
+        lPostGain = lPan;
+        l2rPostGain = 0.0f;
+    }
+    else{
+        lPostGain = 0.0f;
+        l2rPostGain = -lPan;
+    }
+
+    if(rPan > 0.0f){
+        rPostGain = rPan;
+        r2lPostGain = 0.0f;
+    }
+    else{
+        rPostGain = 0.0f;
+        r2lPostGain = -rPan;
+    }
 
     for(int i = 0; i < buffer.getNumSamples(); i++){
         auto currentLeftSample = leftChannel[i];
@@ -204,7 +239,16 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
         leftChannel[i] = lpregain*currentLeftSample + r2lgain*currentRightSample;
         rightChannel[i] = rpregain*currentRightSample + l2rgain*currentLeftSample;
+
+        currentLeftSample = leftChannel[i];
+        currentRightSample = rightChannel[i];
+
+        leftChannel[i] = lPostGain*currentLeftSample + r2lPostGain*currentRightSample;
+        rightChannel[i] = rPostGain*currentRightSample + l2rPostGain*currentLeftSample;
     }
+    //==================MODEL2=======================================================
+    //process as buffer to apply gainRamp to to smooth gain change, or implement
+    //own gain ramp to model 1(?)
 }
 
 //==============================================================================
@@ -226,6 +270,8 @@ void AudioPluginAudioProcessor::getStateInformation (juce::MemoryBlock& destData
     xml->setAttribute("rightpregain", (double) *rightPreGain);
     xml->setAttribute("lefttorightgain", (double) *leftToRightGain);
     xml->setAttribute("righttoleftgain", (double) *rightToLeftGain);
+    xml->setAttribute("leftpan", (double) *leftPan);
+    xml->setAttribute("rightpan", (double) *rightPan);
     copyXmlToBinary(*xml, destData);
 }
 
@@ -238,6 +284,8 @@ void AudioPluginAudioProcessor::setStateInformation (const void* data, int sizeI
             *rightPreGain = (float)xml->getDoubleAttribute("rightpregain", 1.0f);
             *leftToRightGain = (float)xml->getDoubleAttribute("lefttorightgain", 0.0f);
             *rightToLeftGain = (float)xml->getDoubleAttribute("righttoleftgain", 0.0f);
+            *leftPan = (float)xml->getDoubleAttribute("leftpan", -1.0f);
+            *rightPan = (float)xml->getDoubleAttribute("rightpan", 1.0f);
         }
     }
 }
@@ -260,6 +308,14 @@ void AudioPluginAudioProcessor::setLeftToRightGain(float newValue)
 void AudioPluginAudioProcessor::setRightToLeftGain(float newValue)
 {
     *rightToLeftGain = newValue;
+}
+
+void AudioPluginAudioProcessor::setLeftPan(float newValue){
+    *leftPan = newValue;
+}
+
+void AudioPluginAudioProcessor::setRightPan(float newValue){
+    *rightPan = newValue;
 }
 //==============================================================================
 // This creates new instances of the plugin..
