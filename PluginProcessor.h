@@ -59,10 +59,14 @@ private:
     juce::AudioParameterFloat* leftPan; //default -1.0 / full left
     juce::AudioParameterFloat* rightPan; //default 1.0 / full right
     //==============================================================================
-    // float prevLeftPreGain;
-    // float prevRightPreGain;
-    // float prevLeftToRightGain;
-    // float prevRightToLeftGain;
+    float prevLeftPreGain;
+    float prevRightPreGain;
+    float prevLeftToRightGain;
+    float prevRightToLeftGain;
+    float prevLeftPostGain;
+    float prevRightPostGain;
+    float prevLeftToRightPostGain;
+    float prevRightToLeftPostGain;
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)
 };
