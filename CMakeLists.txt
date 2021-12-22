@@ -6,6 +6,10 @@ set(CMAKE_CXX_STANDARD 17)
 # add_subdirectory(JUCE)
 find_package(JUCE CONFIG REQUIRED)
 
+include_directories(include)
+
+file(GLOB SOURCES "src/*.cpp")
+
 juce_add_plugin(pantheon
     COMPANY_NAME "Tauri Invictus"
     COMPANY_COPYRIGHT "GPLv3"
@@ -18,11 +22,7 @@ juce_add_plugin(pantheon
     VST3_CATEGORIES FX
 )
 
-target_sources(pantheon
-    PRIVATE
-        PluginEditor.cpp
-        PluginProcessor.cpp
-)
+target_sources(pantheon PRIVATE ${SOURCES})
 
 
 target_compile_definitions(pantheon

@@ -52,6 +52,7 @@ public:
     void setRightPan(float newValue);
 private:
     //==============================================================================
+    juce::AudioParameterFloat* mainPan; // -1.0 -- 1.0, default at 0, mL = 1-mainPan, mR = 1 + mainPan
     juce::AudioParameterFloat* leftPreGain;
     juce::AudioParameterFloat* rightPreGain;
     juce::AudioParameterFloat* leftToRightGain;
