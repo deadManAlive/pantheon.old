@@ -5,7 +5,8 @@
 
 //==============================================================================
 class AudioPluginAudioProcessorEditor  : public juce::AudioProcessorEditor,
-                                         private juce::Slider::Listener
+                                         private juce::Slider::Listener,
+                                         private juce::Timer
 {
 public:
     explicit AudioPluginAudioProcessorEditor (AudioPluginAudioProcessor&);
@@ -21,6 +22,7 @@ private:
     AudioPluginAudioProcessor& processorRef;
 
     void sliderValueChanged(juce::Slider* slider) override;
+    void timerCallback() override;
 
     juce::Slider lPreGainSlider;
     juce::Slider rPreGainSlider;
@@ -29,7 +31,7 @@ private:
     juce::Slider leftPanSlider;
     juce::Slider rightPanSlider;
 
-    juce::Image backGroundImg = juce::ImageCache::getFromMemory(BinaryData::bgscribble_png, BinaryData::bgscribble_pngSize);
+    // juce::Image backGroundImg = juce::ImageCache::getFromMemory(BinaryData::bgscribble_png, BinaryData::bgscribble_pngSize);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessorEditor)
 };

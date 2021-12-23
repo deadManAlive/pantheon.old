@@ -198,6 +198,18 @@ bool AudioPluginAudioProcessor::isBusesLayoutSupported (const BusesLayout& layou
   #endif
 }
 
+float gainRamp(float& prevGain, float currentGain, int sampleNum){
+    if(abs(prevGain - currentGain) < 0.01f){
+        return currentGain;
+    }
+
+    float step = (currentGain - prevGain)/sampleNum;
+    
+    prevGain += step;
+
+    return prevGain;
+}
+
 void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                                               juce::MidiBuffer& midiMessages)
 {
@@ -208,9 +220,18 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     auto totalNumOutputChannels = getTotalNumOutputChannels();
     auto sampleNum = buffer.getNumSamples();
 
-    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i){
-        buffer.clear (i, 0, sampleNum);
-    }
+    // In case we have more outputs than inputs, this code clears any output
+    // channels that didn't contain input data, (because these aren't
+    // guaranteed to be empty - they may contain garbage).
+    // This is here to avoid people getting screaming feedback
+    // when they first compile a plugin, but obviously you don't need to keep
+    // this code if your algorithm always overwrites all the output channels.
+    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
+        buffer.clear (i, 0, buffer.getNumSamples());
+
+    //==================MODEL1=======================================================
+    auto* leftChannel = buffer.getWritePointer(0);
+    auto* rightChannel = buffer.getWritePointer(1);
 
     //stereo channel mixing vars.
     float lPreGain = leftPreGain->get();
@@ -243,75 +264,37 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         rPostGain = 0.0f;
         r2lPostGain = -rPan;
     }
-    //==================MODEL1=======================================================
-    /*
-    auto* leftChannel = buffer.getWritePointer(0);
-    auto* rightChannel = buffer.getWritePointer(1);
 
-    for(int i = 0; i < sampleNum; i++){
+    // float lPreGainStep = (lPreGain - prevLeftPreGain)/sampleNum;
+    // float rPreGainStep = (rPreGain - prevLeftPreGain)/sampleNum;
+    // float l2rGainStep = (l2rGain - prevLeftToRightGain)/sampleNum;
+    // float r2lGainStep = (r2lGain - prevRightToLeftGain)/sampleNum;
+    // float lPostGainStep = (lPostGain - prevLeftPostGain)/sampleNum;
+    // float rPostGainStep = (rPostGain - prevRightPostGain)/sampleNum;
+    // float l2rPostGainStep = (l2rPostGain - prevLeftToRightPostGain)/sampleNum;
+    // float r2lPostGainStep = (r2lPostGain - prevRightToLeftPostGain)/sampleNum;
+
+    for(int i = 0; i < buffer.getNumSamples(); i++){
         auto currentLeftSample = leftChannel[i];
         auto currentRightSample = rightChannel[i];
 
-        leftChannel[i] = lPreGain*currentLeftSample + r2lGain*currentRightSample;
-        rightChannel[i] = rPreGain*currentRightSample + l2rGain*currentLeftSample;
+        // leftChannel[i] = lPreGain*currentLeftSample + r2lGain*currentRightSample;
+        // rightChannel[i] = rPreGain*currentRightSample + l2rGain*currentLeftSample;
+        leftChannel[i] = gainRamp(prevLeftPreGain, lPreGain, sampleNum)*currentLeftSample + gainRamp(prevRightToLeftGain, r2lGain, sampleNum)*currentRightSample;
+        rightChannel[i] = gainRamp(prevRightPreGain, rPreGain, sampleNum)*currentRightSample + gainRamp(prevLeftToRightGain, l2rGain, sampleNum)*currentLeftSample;
 
         currentLeftSample = leftChannel[i];
         currentRightSample = rightChannel[i];
 
-        leftChannel[i] = lPostGain*currentLeftSample + r2lPostGain*currentRightSample;
-        rightChannel[i] = rPostGain*currentRightSample + l2rPostGain*currentLeftSample;
+        // leftChannel[i] = lPostGain*currentLeftSample + r2lPostGain*currentRightSample;
+        // rightChannel[i] = rPostGain*currentRightSample + l2rPostGain*currentLeftSample;
+
+        leftChannel[i] = gainRamp(prevLeftPostGain, lPostGain, sampleNum)*currentLeftSample + gainRamp(prevRightToLeftPostGain, r2lPostGain, sampleNum)*currentRightSample;
+        rightChannel[i] = gainRamp(prevRightPostGain, rPostGain, sampleNum)*currentRightSample + gainRamp(prevLeftToRightPostGain, l2rPostGain, sampleNum)*currentLeftSample;
     }
-    */
     //==================MODEL2=======================================================
     //process as buffer to apply gainRamp to to smooth gain change, or implement
     //own gain ramp to model 1(?)
-    juce::AudioBuffer<float> leftBuffer(1, sampleNum);
-    juce::AudioBuffer<float> rightBuffer(1, sampleNum);
-    juce::AudioBuffer<float> leftToRightBuffer(1, sampleNum);
-    juce::AudioBuffer<float> rightToLeftBuffer(1, sampleNum);
-
-    leftBuffer.copyFrom(0, 0, buffer, 0, 0, sampleNum);
-    leftToRightBuffer.copyFrom(0, 0, buffer, 0, 0, sampleNum);
-    rightBuffer.copyFrom(0, 0, buffer, 1, 0, sampleNum);
-    rightToLeftBuffer.copyFrom(0, 0, buffer, 1, 0, sampleNum);
-
-    //mix
-    leftBuffer.applyGainRamp(0, sampleNum, prevLeftPreGain, lPreGain);
-    rightBuffer.applyGainRamp(0, sampleNum, prevRightPreGain, rPreGain);
-    leftToRightBuffer.applyGainRamp(0, sampleNum, prevLeftToRightGain, l2rGain);
-    rightToLeftBuffer.applyGainRamp(0, sampleNum, prevRightToLeftGain, r2lGain);
-
-    prevLeftPreGain = lPreGain;
-    prevRightPreGain = rPreGain;
-    prevLeftToRightGain = l2rGain;
-    prevRightToLeftGain = r2lGain;
-
-    leftBuffer.addFrom(0, 0, rightToLeftBuffer, 0, 0, sampleNum);
-    rightBuffer.addFrom(0, 0, leftToRightBuffer, 0, 0, sampleNum);
-    leftToRightBuffer.clear();
-    rightToLeftBuffer.clear();
-
-    //post
-    leftToRightBuffer.copyFrom(0, 0, leftBuffer, 0, 0, sampleNum);
-    rightToLeftBuffer.copyFrom(0, 0, rightBuffer, 0, 0, sampleNum);
-
-    leftBuffer.applyGainRamp(0, sampleNum, prevLeftPostGain, lPostGain);
-    rightBuffer.applyGainRamp(0, sampleNum, prevRightPostGain, rPostGain);
-    leftToRightBuffer.applyGainRamp(0, sampleNum, prevLeftToRightPostGain, l2rPostGain);
-    rightToLeftBuffer.applyGainRamp(0, sampleNum, prevRightToLeftPostGain, r2lPostGain);
-
-    prevLeftPostGain = lPostGain;
-    prevRightPostGain = rPostGain;
-    prevLeftToRightPostGain = l2rPostGain;
-    prevRightToLeftPostGain = r2lPostGain;
-
-    leftBuffer.addFrom(0, 0, rightToLeftBuffer, 0, 0, sampleNum);
-    rightBuffer.addFrom(0, 0, leftToRightBuffer, 0, 0, sampleNum);
-    
-    buffer.clear();
-
-    buffer.copyFrom(0, 0, leftBuffer, 0, 0, sampleNum);
-    buffer.copyFrom(1, 0, rightBuffer, 0, 0, sampleNum);
 }
 
 //==============================================================================
