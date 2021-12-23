@@ -8,6 +8,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     // juce::ignoreUnused (processorRef);
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
+    startTimerHz(30);
     setSize(420, 620);
 
     lPreGainSlider.setSliderStyle(juce::Slider::LinearBarVertical);
@@ -42,7 +43,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     r2lGainSlider.setValue(0.0);
     r2lGainSlider.setDoubleClickReturnValue(true, 0.0);
 
-    leftPanSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    leftPanSlider.setSliderStyle(juce::Slider::LinearBar);
     leftPanSlider.setRange(-1.0, 1.0);
     leftPanSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 90, 0);
     leftPanSlider.setPopupDisplayEnabled(true, false, this);
@@ -50,7 +51,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     leftPanSlider.setValue(-1.0);
     leftPanSlider.setDoubleClickReturnValue(true, -1.0);
 
-    rightPanSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    rightPanSlider.setSliderStyle(juce::Slider::LinearBar);
     rightPanSlider.setRange(-1.0, 1.0);
     rightPanSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 90, 0);
     rightPanSlider.setPopupDisplayEnabled(true, false, this);
@@ -83,22 +84,26 @@ AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor()
 void AudioPluginAudioProcessorEditor::paint (juce::Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
-    // g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
-    g.drawImageAt(backGroundImg, 0, 0);
+    g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
+    // g.drawImageAt(backGroundImg, 0, 0);
 
-    g.setColour (juce::Colours::black);
+    g.setColour (juce::Colours::cyan);
+    g.drawRect(44, 185, 14, 310);
+    g.drawRect(358, 185, 14, 310);
+    g.drawRect(46, 577, 328, 14);
+    g.drawEllipse(179, 97, 60, 60, 1);
 }
 
 void AudioPluginAudioProcessorEditor::resized()
 {
     // This is generally where you'll want to lay out the positions of any
     // subcomponents in your editor..
-    r2lGainSlider.setBounds(95, 130, 20, 361);
-    lPreGainSlider.setBounds(165, 130, 20, 361);
-    rPreGainSlider.setBounds(235, 130, 20, 361);
-    l2rGainSlider.setBounds(305, 130, 20, 361);
-    leftPanSlider.setBounds(31, 540, 64, 64);
-    rightPanSlider.setBounds(325, 540, 64, 64);
+    r2lGainSlider.setBounds(128, 185, 14, 310);
+    lPreGainSlider.setBounds(177, 185, 14, 310);
+    rPreGainSlider.setBounds(225, 185, 14, 310);
+    l2rGainSlider.setBounds(274, 185, 14, 310);
+    leftPanSlider.setBounds(44, 529, 140, 14);
+    rightPanSlider.setBounds(232, 529, 140, 14);
 }
 
 void AudioPluginAudioProcessorEditor::sliderValueChanged(juce::Slider* slider){
@@ -120,4 +125,8 @@ void AudioPluginAudioProcessorEditor::sliderValueChanged(juce::Slider* slider){
     else if(slider == &rightPanSlider){
         processorRef.setRightPan(rightPanSlider.getValue());
     }
+}
+
+void AudioPluginAudioProcessorEditor::timerCallback(){
+
 }
