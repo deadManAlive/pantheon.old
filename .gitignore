@@ -2,5 +2,6 @@
 build/**
 JUCE/**
 .vscode/**
+.cache/**
 
 # files
